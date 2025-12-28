@@ -13,4 +13,8 @@ interface ActiveSession {
 
 
 
-export let activeSessions: ActiveSession | null;
+export let activeSessions: ActiveSession = {
+  classId: "", 
+  startedAt: "", 
+  attendance:{}
+}

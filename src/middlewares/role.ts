@@ -16,3 +16,16 @@ export function requireTeacherRole() {
     }
   };
 }
+export function requireStudentRole() {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return sendError(res, validationErrors.teacherAccessRequired, 403);
+    }
+    if (user.role === "student") {
+      next();
+    } else {
+      return sendError(res, validationErrors.teacherAccessRequired, 403);
+    }
+  };
+}

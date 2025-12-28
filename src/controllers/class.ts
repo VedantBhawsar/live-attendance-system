@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import { sendError, sendResponse } from "../lib";
 import { notFoundErrors, validationErrors } from "../contants";
 import { addStudentSchema, createClassSchema } from "../validators";
-import { Class } from "../schemas";
+import { Attendance, Class } from "../schemas";
+import type { ObjectId } from "mongoose";
 
 export async function createClassController(req: Request, res: Response) {
   const body = req.body();
@@ -11,14 +12,6 @@ export async function createClassController(req: Request, res: Response) {
     const { data } = createClassSchema.safeParse(body);
     if (!data) {
       return sendError(res, validationErrors.invalidRequest, 400);
-    }
-
-    const existingClass = await Class.findOne({
-      teacherId: userId,
-    });
-
-    if (existingClass) {
-      await Class.findById(existingClass._id);
     }
 
     let classObj = new Class({
@@ -44,17 +37,15 @@ export async function createClassController(req: Request, res: Response) {
 
 export async function addStudentController(req: Request, res: Response) {
   const body = req.body();
+  const id = req.params.id; 
+
   try {
-    const userId = req.userId;
     const { data } = addStudentSchema.safeParse(body);
     if (!data) {
       return sendError(res, validationErrors.invalidRequest, 400);
     }
 
-    let existingClass = await Class.findOneAndUpdate(
-      {
-        teacherId: userId,
-      },
+    let existingClass = await Class.findByIdAndUpdate(id, 
       {
         $push: {
           studentIds: data.studentId,
@@ -83,9 +74,10 @@ export async function addStudentController(req: Request, res: Response) {
 export async function getClassController(req: Request, res: Response) {
   try {
     const userId = req.userId;
+    const id = req.params.id; 
 
-    const classObj = await Class.findOne({
-      teacherId: userId,
+    const classObj = await Class.findById(id, {
+      $or: [{ teacherId: userId }, { "studentIds._id": userId }],
     }).populate("studentIds");
 
     if (!classObj) {
@@ -109,6 +101,32 @@ export async function getClassController(req: Request, res: Response) {
 
 export async function myAttendanceController(req: Request, res: Response) {
   try {
+    const userId = req.userId;
+    const classId = req.params.id;
+
+    const classObj = await Class.findById(classId);
+
+    if (!classObj) {
+      return sendError(res, notFoundErrors.class, 404);
+    }
+
+    if (!classObj.studentIds.includes(userId as any)) {
+      return sendError(res, validationErrors.invalidRequest, 403);
+    }
+
+    const attendance = await Attendance.findOne({
+      classId,
+      studentId: userId,
+    });
+
+    return sendResponse(
+      res,
+      {
+        classId,
+        status: attendance?.status || null,
+      },
+      200
+    );
   } catch (error) {
     return sendError(res, validationErrors.internalServerError);
   }

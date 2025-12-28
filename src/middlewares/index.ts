@@ -1,2 +1,2 @@
 export { authMiddleware } from "./auth";
-export { requireTeacherRole } from "./role";
+export { requireTeacherRole, requireStudentRole } from "./role";

@@ -6,7 +6,7 @@ export const AttendanceSchema = new Schema({
     ref: "Class", 
     required: true,
   },
-  studentIds: {
+  studentId: {
     type: Schema.ObjectId,
     ref: "User", 
     required: true,

@@ -9,5 +9,3 @@ export const createClassSchema = z.object({
 export const addStudentSchema = z.object({
     studentId: z.string()
 })
-
-
